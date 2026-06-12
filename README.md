@@ -1,510 +1,370 @@
-\# BancoSol API
+# BancoSol API — Sistema de Billetera y Transferencias Multimoneda
 
+API RESTful desarrollada en **.NET 10** para gestionar billeteras (cuentas) en Bolivianos (BOB) y Dólares (USD), con soporte de depósitos, retiros, transferencias multimoneda, historial paginado y reporte consolidado de saldos.
 
+---
 
-API RESTful para gestión de billeteras (cuentas) en múltiples monedas con transferencias, conversión de tipo de cambio y reporte consolidado de saldos.
-
-
-
-\---
-
-
-
-\## Tecnologías
-
-
-
-\- \*\*.NET 10\*\* — ASP.NET Core Web API
-
-\- \*\*PostgreSQL\*\* — Base de datos relacional
-
-\- \*\*Entity Framework Core\*\* — ORM con migraciones versionadas
-
-\- \*\*Serilog\*\* — Logging estructurado
-
-\- \*\*FluentValidation\*\* — Validaciones de entrada
-
-\- \*\*xUnit + Moq\*\* — Pruebas unitarias
-
-\- \*\*Swagger / OpenAPI\*\* — Documentación de la API
-
-\- \*\*JWT Bearer\*\* — Autenticación y autorización
-
-
-
-\---
-
-
-
-\## URLs Públicas
-
-
+## 🌐 URLs Públicas
 
 | Recurso | URL |
-
 |---|---|
-
 | API Base | `https://bancosol-api-production.up.railway.app` |
-
 | Swagger UI | `https://bancosol-api-production.up.railway.app/swagger` |
 
+---
 
-
-\---
-
-
-
-\## Credenciales de prueba
-
-
+## 🔑 Credenciales de prueba
 
 Para acceder a los endpoints protegidos, primero obtener un token JWT:
 
-
-
-```
-
+```http
 POST /api/auth/login
-
-```
-
-
-
-```json
+Content-Type: application/json
 
 {
-
-&#x20; "username": "admin",
-
-&#x20; "password": "Admin123!"
-
+  "username": "admin",
+  "password": "bancosol123"
 }
-
 ```
 
-
-
-Usar el token en Swagger haciendo clic en \*\*Authorize\*\* 🔒 e ingresando:
-
-
+Usar el token en Swagger haciendo clic en **Authorize** 🔒 e ingresando:
 
 ```
-
 Bearer <token>
-
 ```
 
+---
 
+## ✅ Requisitos previos (ejecución local)
 
-\---
+| Herramienta | Versión mínima | Enlace |
+|---|---|---|
+| .NET SDK | 10.0 | https://dotnet.microsoft.com/download/dotnet/10.0 |
+| PostgreSQL | 15+ | https://www.postgresql.org/download/ |
+| EF Core CLI | (incluido con .NET SDK) | `dotnet tool install --global dotnet-ef` |
 
+---
 
+## ⚙️ Configuración local
 
-\## Requisitos previos (ejecución local)
-
-
-
-\- \[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-
-\- \[PostgreSQL 15+](https://www.postgresql.org/download/)
-
-
-
-\---
-
-
-
-\## Configuración local
-
-
-
-\*\*1. Clonar el repositorio\*\*
-
-
+**1. Clonar el repositorio**
 
 ```bash
-
 git clone https://github.com/gamach710/bancosol-api.git
-
 cd bancosol-api
-
 ```
 
+**2. Configurar la cadena de conexión**
 
-
-\*\*2. Configurar la cadena de conexión\*\*
-
-
-
-Editar `bancoSol/appsettings.Development.json`:
-
-
+Editar `bancoSol/appsettings.Development.json` con tus datos de PostgreSQL:
 
 ```json
-
 {
-
-&#x20; "ConnectionStrings": {
-
-&#x20;   "DefaultConnection": "Host=localhost;Port=5432;Database=bancosol\_core\_db;Username=postgres;Password=tu\_password"
-
-&#x20; },
-
-&#x20; "Jwt": {
-
-&#x20;   "Key": "tu\_clave\_secreta\_muy\_larga",
-
-&#x20;   "Issuer": "bancosol",
-
-&#x20;   "Audience": "bancosol"
-
-&#x20; }
-
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=bancosol_core_db;Username=postgres;Password=tu_password"
+  },
+  "Jwt": {
+    "Key": "BancoSol$SuperSecretKey#2026!MustBe32CharsMin",
+    "Issuer": "BancoSolAPI",
+    "Audience": "BancoSolClients",
+    "ExpirationMinutes": 60
+  },
+  "AdminCredentials": {
+    "Username": "admin",
+    "Password": "bancosol123"
+  }
 }
-
 ```
 
-
-
-\*\*3. Ejecutar migraciones\*\*
-
-
+**3. Aplicar migraciones de base de datos**
 
 ```bash
-
 cd bancoSol
-
 dotnet ef database update
-
 ```
 
+Las migraciones crean automáticamente las tablas `accounts`, `customers`, `transactions`, `transfers` y `parameters`. Al arrancar, el sistema inicializa el parámetro de numeración de cuentas si no existe.
 
-
-\*\*4. Ejecutar el proyecto\*\*
-
-
+**4. Ejecutar el proyecto**
 
 ```bash
-
 dotnet run
-
 ```
-
-
 
 La API estará disponible en `https://localhost:7001` y Swagger en `https://localhost:7001/swagger`.
 
+---
 
-
-\---
-
-
-
-\## Ejecutar pruebas
-
-
+## 🧪 Ejecutar pruebas
 
 ```bash
-
 cd BancoSol.Tests
-
 dotnet test
-
 ```
 
+Resultado esperado: **29 pruebas, 0 errores**.
 
+Para ver detalle de cada prueba:
 
-Resultado esperado: \*\*29 pruebas, 0 errores\*\*.
+```bash
+dotnet test --logger "console;verbosity=detailed"
+```
 
+---
 
+## 🐳 Docker (opcional)
 
-\---
+```bash
+# Desde la raíz del repositorio
+docker build -t bancosol-api .
+docker run -p 8080:8080 \
+  -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=bancosol_core_db;Username=postgres;Password=tu_password" \
+  -e Jwt__Key="BancoSol$SuperSecretKey#2026!MustBe32CharsMin" \
+  -e AdminCredentials__Username="admin" \
+  -e AdminCredentials__Password="bancosol123" \
+  bancosol-api
+```
 
+---
 
+## 📡 Endpoints
 
-\## Endpoints
+| Método | Ruta | Descripción | Auth |
+|---|---|---|---|
+| POST | `/api/auth/login` | Obtener token JWT | ❌ |
+| POST | `/api/accounts` | Crear cuenta (BOB o USD) | ✅ |
+| GET | `/api/accounts/{accountNumber}` | Obtener cuenta por número | ✅ |
+| POST | `/api/accounts/{accountNumber}/deposits` | Realizar depósito | ✅ |
+| POST | `/api/accounts/{accountNumber}/withdrawals` | Realizar retiro | ✅ |
+| GET | `/api/accounts/{accountNumber}/transactions` | Historial paginado de movimientos | ✅ |
+| POST | `/api/transfers` | Transferencia entre cuentas (con idempotencia) | ✅ |
+| GET | `/api/exchange-rate` | Tipo de cambio vigente USD/BOB | ✅ |
+| GET | `/api/reports/consolidated-balance` | Reporte consolidado de saldo por período | ✅ |
 
+---
 
+## 🏗️ Estructura del proyecto
 
-| Método | Ruta | Descripción |
+```
+bancosol-api/
+├── bancoSol/                         # Proyecto principal ASP.NET Core
+│   ├── Controllers/                  # Controladores HTTP
+│   │   ├── AccountController.cs
+│   │   ├── AuthController.cs
+│   │   ├── ExchangeRateController.cs
+│   │   ├── ReportController.cs
+│   │   └── TransferController.cs
+│   ├── Services/
+│   │   ├── Interfaces/               # Contratos de servicio
+│   │   └── Implementations/          # Lógica de negocio
+│   │       ├── AccountService.cs
+│   │       ├── TransferService.cs
+│   │       ├── ExchangeRateService.cs
+│   │       ├── ReportService.cs
+│   │       └── TokenService.cs
+│   ├── Repositories/
+│   │   ├── Interfaces/
+│   │   └── Implementations/          # Acceso a datos (EF Core)
+│   │       └── AccountRepository.cs  # Incluye SELECT FOR UPDATE
+│   ├── UnitOfWork/                   # Patrón Unit of Work
+│   ├── Models/                       # Entidades de dominio
+│   ├── DTOs/                         # Contratos de entrada/salida
+│   ├── Mappers/                      # Conversión entidad ↔ DTO
+│   ├── Validators/                   # Validaciones FluentValidation
+│   ├── Middleware/                   # ExceptionMiddleware centralizado
+│   ├── Migrations/                   # Migraciones EF Core versionadas
+│   ├── Constants/                    # Enums: Currency, AccountStatus, TransactionType
+│   └── Data/                         # ApplicationDbContext
+├── BancoSol.Tests/                   # Proyecto de pruebas xUnit + Moq
+│   ├── TransferServiceTests.cs       # 12 pruebas
+│   ├── AccountServiceTests.cs        # 10 pruebas
+│   └── ReportServiceTests.cs         # 7 pruebas
+├── Dockerfile
+├── README.md
+└── bancoSol.slnx
+```
 
-|---|---|---|
+---
 
-| POST | `/api/auth/login` | Obtener token JWT |
+## 🔧 Tecnologías utilizadas
 
-| POST | `/api/accounts` | Crear cuenta |
+| Tecnología | Uso |
+|---|---|
+| .NET 10 / ASP.NET Core | Framework principal |
+| PostgreSQL 15+ | Base de datos relacional |
+| Entity Framework Core | ORM con migraciones versionadas |
+| FluentValidation | Validaciones de entrada |
+| Serilog | Logging estructurado (consola + archivo diario) |
+| xUnit + Moq | Pruebas unitarias |
+| Swagger / OpenAPI | Documentación interactiva |
+| JWT Bearer | Autenticación y autorización |
+| IMemoryCache | Caché en memoria |
 
-| GET | `/api/accounts/{id}` | Obtener cuenta por ID |
+---
 
-| GET | `/api/accounts/number/{accountNumber}` | Obtener cuenta por número |
+## 🧠 Decisiones técnicas
 
-| GET | `/api/accounts/customer/{customerId}` | Cuentas por cliente |
+### Arquitectura en capas
 
-| POST | `/api/accounts/{accountNumber}/deposit` | Realizar depósito |
+Se adoptó una arquitectura en capas con separación explícita de responsabilidades:
 
-| POST | `/api/accounts/{accountNumber}/withdraw` | Realizar retiro |
+- **Controllers** — reciben y responden peticiones HTTP; no contienen lógica de negocio.
+- **Services** — contienen toda la lógica de negocio; orquestan repositorios.
+- **Repositories** — acceso a datos mediante EF Core; un repositorio por entidad.
+- **Unit of Work** — coordina múltiples repositorios en una única transacción de base de datos.
+- **DTOs / Mappers** — desacoplan el modelo de dominio del contrato HTTP.
+- **Validators** — FluentValidation valida entradas antes de llegar al servicio.
 
-| GET | `/api/accounts/{accountNumber}/transactions` | Historial paginado |
+### Manejo de dinero
 
-| POST | `/api/transfers` | Transferencia entre cuentas |
+Todos los montos se manejan con tipo `decimal` (exacto) y se redondean a **2 decimales** antes de persistir, evitando errores de punto flotante en operaciones financieras.
 
-| GET | `/api/exchange-rate` | Tipo de cambio vigente USD/BOB |
+### Códigos HTTP
 
-| GET | `/api/reports/consolidated-balance` | Reporte consolidado de saldo |
+| Código | Cuándo se devuelve |
+|---|---|
+| 200 OK | Operación exitosa |
+| 201 Created | Cuenta creada |
+| 400 Bad Request | Validación fallida, saldo insuficiente, moneda no soportada |
+| 401 Unauthorized | Token ausente o inválido |
+| 404 Not Found | Cuenta o recurso no encontrado |
+| 409 Conflict | Clave de idempotencia duplicada / conflicto de concurrencia |
+| 500 Internal Server Error | Error inesperado del sistema |
 
+---
 
+## 🔒 Estrategia de concurrencia
 
-\---
-
-
-
-\## Decisiones técnicas
-
-
-
-\### Arquitectura
-
-
-
-Se adoptó una arquitectura en capas con separación clara de responsabilidades:
-
-
-
-\- \*\*Controllers\*\* — Reciben y responden peticiones HTTP
-
-\- \*\*Services\*\* — Contienen la lógica de negocio
-
-\- \*\*Repositories\*\* — Acceso a datos
-
-\- \*\*Unit of Work\*\* — Coordina múltiples repositorios en una transacción
-
-\- \*\*DTOs / Mappers\*\* — Separación entre modelos de dominio y contratos de API
-
-
-
-\### Estrategia de concurrencia
-
-
-
-Se implementó \*\*bloqueo pesimista a nivel de base de datos\*\* mediante `SELECT FOR UPDATE` al obtener cuentas para operaciones de débito. Esto garantiza que operaciones simultáneas sobre la misma cuenta no puedan dejar el saldo negativo ni corromper el historial, ya que PostgreSQL serializa el acceso fila por fila.
-
-
+Se implementó **bloqueo pesimista a nivel de base de datos** (`SELECT FOR UPDATE`) al obtener cuentas para operaciones de débito (retiros y transferencias).
 
 ```csharp
-
-// El método GetByAccountNumberForUpdateAsync aplica FOR UPDATE
-
-context.Accounts
-
-&#x20;   .FromSqlRaw("SELECT \* FROM accounts WHERE account\_number = {0} FOR UPDATE", accountNumber)
-
-&#x20;   .FirstOrDefaultAsync();
-
+// AccountRepository.cs
+return await _context.Accounts
+    .FromSqlInterpolated($@"
+        SELECT * FROM accounts
+        WHERE account_number = {accountNumber}
+        FOR UPDATE")
+    .FirstOrDefaultAsync();
 ```
 
+**Por qué bloqueo pesimista:**  
+En un sistema financiero las colisiones de escritura son frecuentes (múltiples transferencias simultáneas sobre la misma cuenta). El bloqueo pesimista serializa el acceso fila a fila en PostgreSQL, garantizando que ninguna operación concurrente pueda dejar el saldo negativo ni corromper el historial. Se eligió sobre bloqueo optimista porque el costo de reintentos en caso de colisión es mayor que el costo del lock preventivo.
 
+Además, todas las operaciones de transferencia se realizan dentro de una única transacción de EF Core (`SaveChangesAsync`), lo que garantiza atomicidad: si cualquier paso falla, se hace ROLLBACK completo.
 
-\### Estrategia de idempotencia
+---
 
+## 🔁 Estrategia de idempotencia
 
+Las transferencias aceptan un campo obligatorio `IdempotencyKey` en el body del request. Antes de procesar cualquier transferencia, el sistema consulta si ya existe una con esa clave:
 
-Las transferencias aceptan un campo `IdempotencyKey`. Antes de procesar cualquier transferencia, el sistema consulta si ya existe una con esa clave. Si existe, devuelve el resultado original sin volver a ejecutar la operación. Esto permite reintentos seguros desde el cliente.
-
-
-
-\### Estrategia de resiliencia (tipo de cambio externo)
-
-
-
-El servicio de tipo de cambio integra la API de HexaRate (`https://hexarate.paikama.co`). Se implementaron tres capas de resiliencia:
-
-
-
-1\. \*\*Timeout configurado\*\* de 5 segundos en el `HttpClient`
-
-2\. \*\*Caché en memoria\*\* del tipo de cambio con TTL razonable para evitar llamadas innecesarias
-
-3\. \*\*Fallback automático\*\* a una tasa predeterminada si el servicio externo no responde, marcando la respuesta con `IsFallbackRate: true`
-
-
-
-La API nunca cae por un proveedor externo caído.
-
-
-
-\### Política de redondeo
-
-
-
-Todos los montos monetarios se manejan con tipo `decimal` y se redondean a \*\*2 decimales\*\* usando `Math.Round(amount, 2)` antes de persistir.
-
-
-
-\### Atomicidad
-
-
-
-Entity Framework Core con PostgreSQL garantiza atomicidad mediante transacciones implícitas en `SaveChangesAsync()`. Si cualquier paso de una transferencia o depósito falla, EF hace rollback automático y ningún cambio queda aplicado parcialmente.
-
-
-
-\---
-
-
-
-\## Estructura del proyecto
-
-
-
+```csharp
+// TransferService.cs
+var existing = await _unitOfWork.Transfers.GetByIdempotencyKeyAsync(request.IdempotencyKey);
+if (existing != null)
+    return existing.ToResponse(); // Devuelve el resultado original sin re-ejecutar
 ```
 
-bancosol-api/
+**Comportamiento:**
+- Si la clave no existe → se procesa la transferencia normalmente.
+- Si la clave ya existe → se devuelve el resultado de la operación original sin debitar ni acreditar nuevamente.
+- La clave queda persistida en la tabla `transfers` junto a la operación.
 
-├── bancoSol/
+Esto permite reintentos seguros desde el cliente (ej. timeout de red) sin duplicar efectos.
 
-│   ├── Controllers/
+---
 
-│   ├── Services/
+## 🛡️ Estrategia de resiliencia ante caída del proveedor externo
 
-│   │   ├── Interfaces/
+El tipo de cambio USD/BOB se obtiene de la API pública de HexaRate (`https://hexarate.paikama.co/api/rates/USD/BOB/latest`). Se implementaron tres capas de resiliencia:
 
-│   │   └── Implementations/
+**1. Timeout configurado**
 
-│   ├── Repositories/
-
-│   │   ├── Interfaces/
-
-│   │   └── Implementations/
-
-│   ├── Models/
-
-│   ├── DTOs/
-
-│   ├── Mappers/
-
-│   ├── Validators/
-
-│   ├── Middleware/
-
-│   ├── UnitOfWork/
-
-│   ├── Constants/
-
-│   ├── Data/
-
-│   └── Migrations/
-
-├── BancoSol.Tests/
-
-│   ├── TransferServiceTests.cs
-
-│   ├── ReportServiceTests.cs
-
-│   └── AccountServiceTests.cs
-
-├── Dockerfile
-
-├──  README.md
-
-└── bancoSol.slnx
-
+```csharp
+// Program.cs
+builder.Services.AddHttpClient<IExchangeRateService, ExchangeRateService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(5);
+    client.BaseAddress = new Uri("https://hexarate.paikama.co");
+});
 ```
 
+**2. Caché en memoria (TTL 30 minutos)**
 
+Si el tipo de cambio ya fue consultado, se devuelve desde caché sin llamar al proveedor externo:
 
-\---
+```csharp
+if (_cache.TryGetValue(CacheKey, out ExchangeRateResponse? cached) && cached != null)
+    return cached;
+// ... llamada HTTP ...
+_cache.Set(CacheKey, rate, TimeSpan.FromMinutes(30));
+```
 
+**3. Fallback automático**
 
+Si el proveedor externo no responde (timeout, error de red, 5xx), el sistema usa una tasa predeterminada (`6.94 BOB/USD`) y continúa operando. La respuesta incluye `"isFallback": true` para que el cliente sepa que se usó la tasa de respaldo. El fallback también se cachea por 5 minutos para no reintentar constantemente:
 
-\## Pruebas incluidas
+```csharp
+catch (Exception ex)
+{
+    _logger.LogWarning(ex, "API de tipo de cambio no disponible, usando tasa de fallback: {Rate}", FallbackRate);
+    var fallback = new ExchangeRateResponse { Rate = FallbackRate, IsFallback = true };
+    _cache.Set(CacheKey, fallback, TimeSpan.FromMinutes(5));
+    return fallback;
+}
+```
 
+**La API nunca se cae porque el proveedor externo esté caído.**
 
+---
 
-\### TransferServiceTests (12 pruebas)
+## 🧪 Pruebas incluidas (29 en total)
 
-\- Conversión USD → BOB multiplica por la tasa
+### TransferServiceTests — 12 pruebas
 
-\- Conversión BOB → USD divide por la tasa
+| # | Prueba |
+|---|---|
+| 1 | Transferencia USD → BOB multiplica por la tasa |
+| 2 | Transferencia BOB → USD divide por la tasa |
+| 3 | Misma moneda no llama al servicio de tipo de cambio |
+| 4 | Saldo origen se descuenta correctamente |
+| 5 | Saldo destino se incrementa correctamente |
+| 6 | Saldo insuficiente lanza `ArgumentException` |
+| 7 | Idempotencia: reintento con misma clave no re-ejecuta ni guarda |
+| 8 | Cuenta origen no encontrada lanza `KeyNotFoundException` |
+| 9 | Cuenta destino no encontrada lanza `KeyNotFoundException` |
+| 10 | Cuenta origen inactiva lanza `InvalidOperationException` |
+| 11 | Cuenta destino bloqueada lanza `InvalidOperationException` |
+| 12 | Transferencia exitosa guarda 1 Transfer + 2 Transactions |
 
-\- Misma moneda no llama al servicio de tipo de cambio
+### AccountServiceTests — 10 pruebas
 
-\- Saldo origen se descuenta correctamente
+Validan: moneda no soportada (EUR), retiro con saldo insuficiente, depósito en cuenta inactiva, cuenta no encontrada, validaciones de monto, entre otros.
 
-\- Saldo destino se incrementa correctamente
+### ReportServiceTests — 7 pruebas
 
-\- Saldo insuficiente lanza `ArgumentException`
+Validan: reporte en BOB convierte correctamente, reporte en USD, moneda en minúsculas se normaliza, fechas fuera de rango devuelven 0, EndDate inclusivo, tasa fallback reflejada, tipo de cambio consultado exactamente una vez.
 
-\- Idempotencia no ejecuta dos veces ni guarda
+---
 
-\- Cuenta origen no encontrada lanza `KeyNotFoundException`
+## 🔐 Seguridad
 
-\- Cuenta destino no encontrada lanza `KeyNotFoundException`
+Los endpoints están protegidos con **JWT Bearer Authentication**. Para probarlos:
 
-\- Cuenta origen inactiva lanza `InvalidOperationException`
+1. `POST /api/auth/login` con las credenciales de administrador
+2. Copiar el token de la respuesta
+3. En Swagger, clic en **Authorize** e ingresar `Bearer <token>`
+4. Todos los endpoints quedan habilitados durante la sesión (60 minutos)
 
-\- Cuenta destino bloqueada lanza `InvalidOperationException`
+---
 
-\- Transferencia exitosa guarda 1 Transfer + 2 Transactions
+## 🚀 Despliegue
 
+La API está desplegada en **Railway** con:
 
-
-\### ReportServiceTests (7 pruebas)
-
-\- Reporte en BOB convierte y suma todos los tipos de transacción
-
-\- Reporte en USD convierte BOB correctamente
-
-\- Moneda en minúsculas se normaliza a mayúsculas
-
-\- Fechas fuera de rango devuelven balance 0
-
-\- EndDate es inclusivo
-
-\- Tasa fallback se refleja en la respuesta
-
-\- Tipo de cambio se consulta exactamente una vez
-
-
-
-\---
-
-
-
-\## Seguridad
-
-
-
-Los endpoints están protegidos con \*\*JWT Bearer Authentication\*\*. Para probarlos:
-
-
-
-1\. Hacer `POST /api/auth/login` con las credenciales de administrador
-
-2\. Copiar el token de la respuesta
-
-3\. En Swagger, clic en \*\*Authorize\*\* e ingresar `Bearer <token>`
-
-4\. Todos los endpoints quedan habilitados durante la sesión
-
-
-
-\---
-
-
-
-\## Despliegue
-
-
-
-La API está desplegada en \*\*Railway\*\* con:
-
-
-
-\- Detección automática de cambios vía GitHub (CI/CD automático)
-
-\- Base de datos PostgreSQL en Railway
-
-\- Migraciones ejecutadas automáticamente al iniciar
-
-\- Variables de entorno configuradas en Railway (no hay secrets en el repositorio)
+- CI/CD automático via GitHub (cada push a `main` despliega)
+- Base de datos PostgreSQL gestionada en Railway
+- Migraciones EF Core ejecutadas automáticamente al iniciar (`context.Database.Migrate()`)
+- Variables de entorno configuradas en Railway (no hay secrets en el repositorio)
+- Puerto configurable via variable de entorno `PORT` (por defecto 8080)
 
