@@ -48,6 +48,7 @@ namespace bancoSol.Services.Implementations
             };
 
             await _unitOfWork.Accounts.CreateAsync(account);
+            await _unitOfWork.SaveChangesAsync();
 
             if (request.InitialBalance > 0)
             {
@@ -61,9 +62,9 @@ namespace bancoSol.Services.Implementations
                     Description = $"Depósito inicial en {request.Currency.ToUpper()}",
                     CreatedAt = DateTime.UtcNow
                 });
-            }
 
-            await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.SaveChangesAsync();
+            }
 
             return account.ToResponse();
         }
@@ -121,7 +122,6 @@ namespace bancoSol.Services.Implementations
             });
 
             await _unitOfWork.SaveChangesAsync();
-
             _cache.Remove($"transactions_{accountNumber}");
             return account.ToResponse();
         }
@@ -162,7 +162,6 @@ namespace bancoSol.Services.Implementations
             });
 
             await _unitOfWork.SaveChangesAsync();
-
             _cache.Remove($"transactions_{accountNumber}");
             return account.ToResponse();
         }
