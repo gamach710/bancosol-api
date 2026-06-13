@@ -115,7 +115,7 @@ namespace BancoSol.Tests
                 IdempotencyKey = "key2"
             });
 
-            // 700 BOB / 7 = 100 USD
+         
             Assert.Equal(100, result.DestinationAmount);
             Assert.Equal(7, result.ExchangeRate);
         }
@@ -143,7 +143,7 @@ namespace BancoSol.Tests
             Assert.Equal(300, result.DestinationAmount);
             Assert.Null(result.ExchangeRate);
 
-            // Verifica que nunca se consultó el tipo de cambio
+           
             _exchangeServiceMock.Verify(x => x.GetRateAsync(), Times.Never);
         }
 
@@ -169,7 +169,7 @@ namespace BancoSol.Tests
                 IdempotencyKey = "key4"
             });
 
-            // 1000 - 300 = 700
+       
             Assert.Equal(700, source.Balance);
         }
 
@@ -191,7 +191,7 @@ namespace BancoSol.Tests
                 IdempotencyKey = "key5"
             });
 
-            // 500 + 300 = 800
+           
             Assert.Equal(800, destination.Balance);
         }
 
@@ -258,7 +258,7 @@ namespace BancoSol.Tests
 
             Assert.Equal(700, result.DestinationAmount);
 
-            // No se guardó nada nuevo
+       
             _unitOfWorkMock.Verify(u => u.SaveChangesAsync(), Times.Never);
             _transferRepoMock.Verify(u => u.AddAsync(It.IsAny<Transfer>()), Times.Never);
         }
