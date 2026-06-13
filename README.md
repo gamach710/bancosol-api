@@ -91,7 +91,7 @@ Las migraciones crean automáticamente las tablas `accounts`, `customers`, `tran
 dotnet run
 ```
 
-La API estará disponible en `https://localhost:7001` y Swagger en `https://localhost:7001/swagger`.
+La API estará disponible en `https://localhost:5111` y Swagger en `https://localhost:5111/swagger`.
 
 ---
 
@@ -157,11 +157,6 @@ bancosol-api/
 │   ├── Services/
 │   │   ├── Interfaces/               # Contratos de servicio
 │   │   └── Implementations/          # Lógica de negocio
-│   │       ├── AccountService.cs
-│   │       ├── TransferService.cs
-│   │       ├── ExchangeRateService.cs
-│   │       ├── ReportService.cs
-│   │       └── TokenService.cs
 │   ├── Repositories/
 │   │   ├── Interfaces/
 │   │   └── Implementations/          # Acceso a datos (EF Core)
@@ -232,89 +227,31 @@ Todos los montos se manejan con tipo `decimal` (exacto) y se redondean a **2 dec
 | 500 Internal Server Error | Error inesperado del sistema |
 
 ---
+🔒 Estrategia de concurrencia
 
-## 🔒 Estrategia de concurrencia
+Se usa bloqueo pesimista con SELECT FOR UPDATE en PostgreSQL al momento de debitar una cuenta. Esto hace que si dos operaciones llegan al mismo tiempo sobre la misma cuenta, una espera a que la otra termine — así el saldo nunca queda negativo ni inconsistente.
+csharp
 
-Se implementó **bloqueo pesimista a nivel de base de datos** (`SELECT FOR UPDATE`) al obtener cuentas para operaciones de débito (retiros y transferencias).
+| SELECT * FROM accounts WHERE account_number = {accountNumber} FOR UPDATE | 
 
-```csharp
-// AccountRepository.cs
-return await _context.Accounts
-    .FromSqlInterpolated($@"
-        SELECT * FROM accounts
-        WHERE account_number = {accountNumber}
-        FOR UPDATE")
-    .FirstOrDefaultAsync();
-```
+Se eligió este enfoque sobre el optimista porque en un sistema financiero es preferible prevenir la colisión que tener que reintentarla.
 
-**Por qué bloqueo pesimista:**  
-En un sistema financiero las colisiones de escritura son frecuentes (múltiples transferencias simultáneas sobre la misma cuenta). El bloqueo pesimista serializa el acceso fila a fila en PostgreSQL, garantizando que ninguna operación concurrente pueda dejar el saldo negativo ni corromper el historial. Se eligió sobre bloqueo optimista porque el costo de reintentos en caso de colisión es mayor que el costo del lock preventivo.
+🔁 Estrategia de idempotencia
 
-Además, todas las operaciones de transferencia se realizan dentro de una única transacción de EF Core (`SaveChangesAsync`), lo que garantiza atomicidad: si cualquier paso falla, se hace ROLLBACK completo.
+Cada transferencia lleva un IdempotencyKey. Si el cliente reintenta la misma operación (por ejemplo, por un timeout de red), el sistema detecta que ya fue procesada y devuelve el resultado original sin volver a ejecutarla.
 
----
-
-## 🔁 Estrategia de idempotencia
-
-Las transferencias aceptan un campo obligatorio `IdempotencyKey` en el body del request. Antes de procesar cualquier transferencia, el sistema consulta si ya existe una con esa clave:
-
-```csharp
-// TransferService.cs
-var existing = await _unitOfWork.Transfers.GetByIdempotencyKeyAsync(request.IdempotencyKey);
+|  var existing = await _unitOfWork.Transfers.GetByIdempotencyKeyAsync(request.IdempotencyKey);
 if (existing != null)
-    return existing.ToResponse(); // Devuelve el resultado original sin re-ejecutar
-```
+    return existing.ToResponse(); | 
 
-**Comportamiento:**
-- Si la clave no existe → se procesa la transferencia normalmente.
-- Si la clave ya existe → se devuelve el resultado de la operación original sin debitar ni acreditar nuevamente.
-- La clave queda persistida en la tabla `transfers` junto a la operación.
 
-Esto permite reintentos seguros desde el cliente (ej. timeout de red) sin duplicar efectos.
+🛡️ Resiliencia ante caída del proveedor externo
 
----
+El tipo de cambio se obtiene de HexaRate. Si el servicio no responde, el sistema no se cae — tiene tres capas de protección:
 
-## 🛡️ Estrategia de resiliencia ante caída del proveedor externo
-
-El tipo de cambio USD/BOB se obtiene de la API pública de HexaRate (`https://hexarate.paikama.co/api/rates/USD/BOB/latest`). Se implementaron tres capas de resiliencia:
-
-**1. Timeout configurado**
-
-```csharp
-// Program.cs
-builder.Services.AddHttpClient<IExchangeRateService, ExchangeRateService>(client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(5);
-    client.BaseAddress = new Uri("https://hexarate.paikama.co");
-});
-```
-
-**2. Caché en memoria (TTL 30 minutos)**
-
-Si el tipo de cambio ya fue consultado, se devuelve desde caché sin llamar al proveedor externo:
-
-```csharp
-if (_cache.TryGetValue(CacheKey, out ExchangeRateResponse? cached) && cached != null)
-    return cached;
-// ... llamada HTTP ...
-_cache.Set(CacheKey, rate, TimeSpan.FromMinutes(30));
-```
-
-**3. Fallback automático**
-
-Si el proveedor externo no responde (timeout, error de red, 5xx), el sistema usa una tasa predeterminada (`6.94 BOB/USD`) y continúa operando. La respuesta incluye `"isFallback": true` para que el cliente sepa que se usó la tasa de respaldo. El fallback también se cachea por 5 minutos para no reintentar constantemente:
-
-```csharp
-catch (Exception ex)
-{
-    _logger.LogWarning(ex, "API de tipo de cambio no disponible, usando tasa de fallback: {Rate}", FallbackRate);
-    var fallback = new ExchangeRateResponse { Rate = FallbackRate, IsFallback = true };
-    _cache.Set(CacheKey, fallback, TimeSpan.FromMinutes(5));
-    return fallback;
-}
-```
-
-**La API nunca se cae porque el proveedor externo esté caído.**
+Timeout de 5 segundos para no esperar indefinidamente.
+Caché de 30 minutos para no llamar al proveedor en cada operación.
+Fallback automático a una tasa de 6.94 BOB/USD si el servicio falla, marcando la respuesta con isFallback: true.
 
 ---
 
@@ -323,19 +260,9 @@ catch (Exception ex)
 ### TransferServiceTests — 12 pruebas
 
 | # | Prueba |
-|---|---|
-| 1 | Transferencia USD → BOB multiplica por la tasa |
-| 2 | Transferencia BOB → USD divide por la tasa |
-| 3 | Misma moneda no llama al servicio de tipo de cambio |
-| 4 | Saldo origen se descuenta correctamente |
-| 5 | Saldo destino se incrementa correctamente |
-| 6 | Saldo insuficiente lanza `ArgumentException` |
-| 7 | Idempotencia: reintento con misma clave no re-ejecuta ni guarda |
-| 8 | Cuenta origen no encontrada lanza `KeyNotFoundException` |
-| 9 | Cuenta destino no encontrada lanza `KeyNotFoundException` |
-| 10 | Cuenta origen inactiva lanza `InvalidOperationException` |
-| 11 | Cuenta destino bloqueada lanza `InvalidOperationException` |
-| 12 | Transferencia exitosa guarda 1 Transfer + 2 Transactions |
+
+### TransferServiceTests — 10 pruebas
+Transferencia USD → BOB multiplica por la tasa , Transferencia BOB → USD divide por la tasa , Misma moneda no llama al servicio de tipo de cambio , Saldo origen se descuenta correctamente ,Saldo destino se incrementa correctamente , Saldo insuficiente lanza ArgumentException , Idempotencia: reintento con misma clave no re-ejecuta ni guarda , Cuenta origen no encontrada lanza KeyNotFoundException9Cuenta destino no encontrada lanza KeyNotFoundException
 
 ### AccountServiceTests — 10 pruebas
 
