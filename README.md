@@ -44,8 +44,14 @@ Bearer <token>
 | EF Core CLI | (incluido con .NET SDK) | `dotnet tool install --global dotnet-ef` |
 
 ---
+## 📁 Proyectos en la solución
+
+bancoSol — Proyecto principal con la API, controladores, servicios, repositorios y migraciones
+
+BancoSol.Tests — Proyecto de pruebas unitarias con xUnit y Moq
 
 ## ⚙️ Configuración local
+
 
 **1. Clonar el repositorio**
 
@@ -89,6 +95,16 @@ Las migraciones crean automáticamente las tablas `accounts`, `customers`, `tran
 
 ```bash
 dotnet run
+```
+**⚠️ Nota para ejecución local: Las líneas de configuración de puerto para Railway deben comentarse antes de correr localmente en Program.cs:**
+
+```
+// Comentar estas líneas (son para Railway)
+// var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+// app.Run($"http://0.0.0.0:{port}");
+
+// Descomentar esta línea para local
+app.Run();
 ```
 
 La API estará disponible en `https://localhost:5111` y Swagger en `https://localhost:5111/swagger`.
@@ -168,7 +184,7 @@ bancosol-api/
 │   ├── Validators/                   # Validaciones FluentValidation
 │   ├── Middleware/                   # ExceptionMiddleware centralizado
 │   ├── Migrations/                   # Migraciones EF Core versionadas
-│   ├── Constants/                    # Enums: Currency, AccountStatus, TransactionType
+│   ├── Constants/                    # Currency, AccountStatus, TransactionType
 │   └── Data/                         # ApplicationDbContext
 ├── BancoSol.Tests/                   # Proyecto de pruebas xUnit + Moq
 │   ├── TransferServiceTests.cs       # 12 pruebas
@@ -227,7 +243,7 @@ Todos los montos se manejan con tipo `decimal` (exacto) y se redondean a **2 dec
 | 500 Internal Server Error | Error inesperado del sistema |
 
 ---
-🔒 Estrategia de concurrencia
+## 🔒 Estrategia de concurrencia
 
 Se usa bloqueo pesimista con SELECT FOR UPDATE en PostgreSQL al momento de debitar una cuenta. Esto hace que si dos operaciones llegan al mismo tiempo sobre la misma cuenta, una espera a que la otra termine — así el saldo nunca queda negativo ni inconsistente.
 csharp
@@ -236,7 +252,7 @@ csharp
 
 Se eligió este enfoque sobre el optimista porque en un sistema financiero es preferible prevenir la colisión que tener que reintentarla.
 
-🔁 Estrategia de idempotencia
+## 🔁 Estrategia de idempotencia
 
 Cada transferencia lleva un IdempotencyKey. Si el cliente reintenta la misma operación (por ejemplo, por un timeout de red), el sistema detecta que ya fue procesada y devuelve el resultado original sin volver a ejecutarla.
 
@@ -245,7 +261,7 @@ if (existing != null)
     return existing.ToResponse(); | 
 
 
-🛡️ Resiliencia ante caída del proveedor externo
+## 🛡️ Resiliencia ante caída del proveedor externo
 
 El tipo de cambio se obtiene de HexaRate. Si el servicio no responde, el sistema no se cae — tiene tres capas de protección:
 
@@ -294,4 +310,25 @@ La API está desplegada en **Railway** con:
 - Migraciones EF Core ejecutadas automáticamente al iniciar (`context.Database.Migrate()`)
 - Variables de entorno configuradas en Railway (no hay secrets en el repositorio)
 - Puerto configurable via variable de entorno `PORT` (por defecto 8080)
+
+📮 Colección Postman
+
+Se incluye una colección con un archivo JSON por cada endpoint, ubicada en la carpeta postman_collection/ del repositorio.
+
+01_login.json — Obtener token JWT
+02_crear_cuenta.json — Crear cuenta BOB o USD
+03_obtener_cuenta.json — Consultar cuenta por número
+04_deposito.json — Realizar depósito
+05_retiro.json — Realizar retiro
+06_transferencia.json — Transferencia entre cuentas
+07_historial.json — Historial paginado de movimientos
+08_tipo_cambio.json — Tipo de cambio vigente USD/BOB
+09_reporte_consolidado.json — Reporte consolidado de saldo
+
+Cómo usarla:
+
+Abre Postman → Import → selecciona los archivos de la carpeta postman_collection/
+Ejecuta primero 01_login.json para obtener el token
+Copia el token y úsalo en el header Authorization: Bearer <token> de las demás requests
+
 
