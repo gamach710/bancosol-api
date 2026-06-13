@@ -311,24 +311,24 @@ La API está desplegada en **Railway** con:
 - Variables de entorno configuradas en Railway (no hay secrets en el repositorio)
 - Puerto configurable via variable de entorno `PORT` (por defecto 8080)
 
-📮 Colección Postman
+## 📮 Colección Postman
 
 Se incluye una colección con un archivo JSON por cada endpoint, ubicada en la carpeta postman_collection/ del repositorio.
 
-01_login.json — Obtener token JWT
-02_crear_cuenta.json — Crear cuenta BOB o USD
-03_obtener_cuenta.json — Consultar cuenta por número
-04_deposito.json — Realizar depósito
-05_retiro.json — Realizar retiro
-06_transferencia.json — Transferencia entre cuentas
-07_historial.json — Historial paginado de movimientos
-08_tipo_cambio.json — Tipo de cambio vigente USD/BOB
-09_reporte_consolidado.json — Reporte consolidado de saldo
+- 01_login.json — Obtener token JWT
+- 02_crear_cuenta.json — Crear cuenta BOB o USD
+- 03_obtener_cuenta.json — Consultar cuenta por número
+- 04_deposito.json — Realizar depósito
+- 05_retiro.json — Realizar retiro
+- 06_transferencia.json — Transferencia entre cuentas
+- 07_historial.json — Historial paginado de movimientos
+- 08_tipo_cambio.json — Tipo de cambio vigente USD/BOB
+- 09_reporte_consolidado.json — Reporte consolidado de saldo
 
 Cómo usarla:
 
-Abre Postman → Import → selecciona los archivos de la carpeta postman_collection/
-Ejecuta primero 01_login.json para obtener el token
-Copia el token y úsalo en el header Authorization: Bearer <token> de las demás requests
+- Abre Postman → Import → selecciona los archivos de la carpeta postman_collection/
+- Ejecuta primero 01_login.json para obtener el token
+- Copia el token y úsalo en el header Authorization: Bearer <token> de las demás requests
 
 
