@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "url": "https://bancosol-api-production.up.railway.app/api/reports/consolidated-balance?startDate=2026-01-01&endDate=2026-12-31&currency=BOB",
+  "headers": {
+    "Authorization": "Bearer <token>"
+  }
+}

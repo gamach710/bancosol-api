@@ -1,0 +1,11 @@
+{
+  "method": "POST",
+  "url": "https://bancosol-api-production.up.railway.app/api/auth/login",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "username": "admin",
+    "password": "bancosol123"
+  }
+}

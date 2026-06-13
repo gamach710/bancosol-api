@@ -1,0 +1,12 @@
+{
+  "method": "POST",
+  "url": "https://bancosol-api-production.up.railway.app/api/accounts/10000000000001/withdrawals",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer <token>"
+  },
+  "body": {
+    "amount": 100,
+    "description": "Retiro de prueba"
+  }
+}

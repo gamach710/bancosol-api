@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "url": "https://bancosol-api-production.up.railway.app/api/accounts/10000000000001/transactions?page=1&pageSize=10",
+  "headers": {
+    "Authorization": "Bearer <token>"
+  }
+}

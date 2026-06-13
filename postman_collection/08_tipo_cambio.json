@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "url": "https://bancosol-api-production.up.railway.app/api/exchange-rate",
+  "headers": {
+    "Authorization": "Bearer <token>"
+  }
+}

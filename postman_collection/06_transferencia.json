@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "url": "https://bancosol-api-production.up.railway.app/api/transfers",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer <token>"
+  },
+  "body": {
+    "sourceAccountNumber": "10000000000001",
+    "destinationAccountNumber": "10000000000002",
+    "amount": 200,
+    "description": "Transferencia de prueba",
+    "idempotencyKey": "transfer-001"
+  }
+}

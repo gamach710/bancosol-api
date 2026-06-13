@@ -1,0 +1,19 @@
+{
+  "method": "POST",
+  "url": "https://bancosol-api-production.up.railway.app/api/accounts",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer <token>"
+  },
+  "body": {
+    "firstName": "Juan",
+    "secondName": "Carlos",
+    "firstLastName": "Pérez",
+    "secondLastName": "García",
+    "ci": "12345678",
+    "email": "juan.perez@gmail.com",
+    "phone": "76543210",
+    "currency": "BOB",
+    "initialBalance": 1000
+  }
+}
