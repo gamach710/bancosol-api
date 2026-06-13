@@ -31,7 +31,7 @@ namespace bancoSol.Services.Implementations
 
             var endDate = request.EndDate.Date.AddDays(1).AddTicks(-1);
 
-            // ✅ Ahora usa el repositorio, sin _context directo
+            
             var transactions = await _transactionRepository
                 .GetByDateRangeAsync(request.StartDate, endDate);
 
