@@ -47,7 +47,7 @@ namespace BancoSol.Tests
                 .Setup(r => r.AddAsync(It.IsAny<Transaction>()))
                 .Returns(Task.CompletedTask);
 
-            // Por defecto no existe transferencia previa con ninguna clave
+        
             _transferRepoMock
                 .Setup(x => x.GetByIdempotencyKeyAsync(It.IsAny<string>()))
                 .ReturnsAsync((Transfer?)null);
@@ -86,7 +86,7 @@ namespace BancoSol.Tests
                 IdempotencyKey = "key1"
             });
 
-            // 100 USD * 7 = 700 BOB
+           
             Assert.Equal(700, result.DestinationAmount);
             Assert.Equal(7, result.ExchangeRate);
         }
