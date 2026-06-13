@@ -89,7 +89,7 @@ namespace BancoSol.Tests
 
             var referenceDate = new DateTime(2026, 6, 1, 12, 0, 0, DateTimeKind.Utc);
 
-            // BOB: +1000 depósito
+            
             _context.Transactions.Add(new Transaction
             {
                 AccountId = bobAccount.Id,
@@ -101,7 +101,7 @@ namespace BancoSol.Tests
                 CreatedAt = referenceDate
             });
 
-            // BOB: +200 transferencia entrante
+            
             _context.Transactions.Add(new Transaction
             {
                 AccountId = bobAccount.Id,
@@ -113,7 +113,7 @@ namespace BancoSol.Tests
                 CreatedAt = referenceDate
             });
 
-            // BOB: -100 transferencia saliente
+           
             _context.Transactions.Add(new Transaction
             {
                 AccountId = bobAccount.Id,
@@ -125,7 +125,7 @@ namespace BancoSol.Tests
                 CreatedAt = referenceDate
             });
 
-            // USD: +100 depósito
+           
             _context.Transactions.Add(new Transaction
             {
                 AccountId = usdAccount.Id,
@@ -137,7 +137,7 @@ namespace BancoSol.Tests
                 CreatedAt = referenceDate
             });
 
-            // USD: -20 retiro
+            
             _context.Transactions.Add(new Transaction
             {
                 AccountId = usdAccount.Id,
@@ -152,7 +152,7 @@ namespace BancoSol.Tests
             _context.SaveChanges();
         }
 
-        // Configura el mock del tipo de cambio con los valores por defecto
+        
         private void SetupExchangeRate(bool isFallback = false)
         {
             _exchangeRateServiceMock
@@ -195,10 +195,7 @@ namespace BancoSol.Tests
         }
 
         // PRUEBA 2: Reporte en USD convierte BOB correctamente y suma/resta todos los tipos
-        //
-        // BOB→USD:  +1000/6.94 +200/6.94 -100/6.94 = +144.09 +28.82 -14.41 = +158.50
-        // USD puro: +100 -20 = +80
-        // Total USD: 158.50 + 80 = 238.50
+      
         [Fact]
         public async Task ConsolidatedBalance_InUSD_ConvertsAndSumsAllTransactionTypes()
         {
@@ -227,7 +224,7 @@ namespace BancoSol.Tests
             {
                 StartDate = Start,
                 EndDate = End,
-                Currency = "bob"   // minúsculas
+                Currency = "bob"   
             });
 
             Assert.Equal("BOB", result.Currency);
@@ -260,7 +257,7 @@ namespace BancoSol.Tests
         {
             SetupExchangeRate();
 
-            // EndDate exactamente igual al día de las transacciones
+       
             var result = await _reportService.GetConsolidatedBalanceAsync(new ConsolidatedBalanceRequest
             {
                 StartDate = new DateTime(2026, 6, 1),
